@@ -1,7 +1,7 @@
 [project]
 name = "vsplit"
 version = "0.0.1"
-description = "This is a template repository for Python projects that use uv for their dependency management."
+description = "Virtually split a file based on a pattern."
 authors = [{ name = "Terry Jones", email = "terence.jones@charite.de" }]
 readme = "README.md"
 keywords = ['python']
@@ -32,7 +32,8 @@ dev = [
     "mypy>=0.991",
     "pytest-cov>=4.0.0",
     "ruff>=0.11.5",
-
+    "pytest-mock>=3.14.1",
+    "bio>=1.6.2",
 ]
 
 [build-system]
@@ -57,7 +58,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 target-version = "py39"
-line-length = 120
+line-length = 90
 fix = true
 
 [tool.ruff.lint]
@@ -94,10 +95,13 @@ select = [
     "TRY",
 ]
 ignore = [
-    # LineTooLong
-    "E501",
-    # DoNotAssignLambda
-    "E731",
+       "TRY003",
+       "SIM115",
+       "S101",
+       # LineTooLong
+       # "E501",
+       # DoNotAssignLambda
+       # "E731",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -112,3 +116,6 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["src"]
+
+[project.scripts]
+vsplit = "vsplit.cli:main"
