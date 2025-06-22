@@ -37,20 +37,20 @@ class FileChunk(io.IOBase):
         self._file: IO[Any] | None = None
         self._position = 0
 
-    def __enter__(self):
+    def __enter__(self) -> FileChunk:
         self.open()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.close()
 
-    def open(self):
+    def open(self) -> None:
         if self._file is None:
             self._file = open(self.filename, "rb" if self.binary else "rt")
             assert self._file is not None
             self._file.seek(self.offset)
 
-    def close(self):
+    def close(self) -> None:
         if self._file:
             self._file.close()
             self._file = None

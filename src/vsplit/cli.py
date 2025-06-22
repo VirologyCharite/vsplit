@@ -218,7 +218,7 @@ def save_offsets(filename: str | None, chunks: list[tuple[int, int]]) -> Path:
     return path
 
 
-def print_offsets(splitter: Splitter, chunks: list[tuple[int, int]], prefix: int):
+def print_offsets(splitter: Splitter, chunks: list[tuple[int, int]], prefix: int) -> None:
     """
     Print TAB-separated split offsets, lengths, and (optionally) a prefix from the
     file for each chunk.
