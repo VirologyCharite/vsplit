@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 from collections.abc import Iterator
 from pathlib import Path
@@ -14,8 +12,6 @@ class Splitter:
         self.binary = binary
         self.buffer_size = buffer_size or 4096
         self.size = os.stat(filename).st_size
-        # chunk = open(filename).read(100)
-        # print(f"File has {self.size} bytes: {chunk!r}")
 
     def _next_pattern_offset(
         self,
@@ -36,21 +32,18 @@ class Splitter:
 
         while True:
             if chunk := fp.read(self.buffer_size):
-                # print(f"Read chunk {chunk!r}")
                 previous_length = len(data)
                 start_offset = max(0, previous_length - max_pattern_length)
                 data = data[start_offset:] + chunk
-                # print(f"Data set to {data!r}")
                 if (match_index := data.find(pattern, start_offset)) > -1:
                     unused = len(data) - match_index
-                    # print(f"Found {pattern!r} at file offset {fp.tell() - unused}")
                     if first and remove_prefix:
                         prefix_length = remove_prefix
                     first = False
                     break
             else:
-                unused = 0
                 # EOF
+                unused = 0
                 break
 
         return fp.tell() - unused + prefix_length, prefix_length
@@ -98,9 +91,7 @@ class Splitter:
         with open(self.filename, "rb" if self.binary else "rt") as fp:
             while fp.tell() < self.size:
                 fp.seek(min(self.size, offset + chunk_size), os.SEEK_SET)
-                # print(f"Tried to jump to {offset + chunk_size}, landed at {fp.tell()}.")
 
-                # next_offset = next_pattern_offset(fp)
                 next_offset, next_prefix_length = self._next_pattern_offset(
                     fp, pattern, max_pattern_length, remove_prefix
                 )

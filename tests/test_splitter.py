@@ -1,10 +1,26 @@
+import os
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
-from vsplit.chunk import chunk_from_file
 from vsplit.splitter import Splitter
+
+from .data import data_factory  # noqa: F401
+
+
+def chunk_from_file(
+    filename: Path,
+    offset: int,
+    length: int,
+    binary: bool = False,
+) -> str | bytes:
+    """
+    Read a chunk of data from a file.
+    """
+    with open(filename, "rb" if binary else "rt") as fp:
+        fp.seek(offset, os.SEEK_SET)
+        return fp.read(length)
 
 
 class Test_Basics:
@@ -12,7 +28,7 @@ class Test_Basics:
     Tests for basic Splitter functionality.
     """
 
-    def test_size_zero(self, data_factory: Callable[[str | bytes], Path]):
+    def test_size_zero(self, data_factory: Callable[[str | bytes], Path]):  # noqa: F811
         """
         The Splitter class should have a 'size' attribute that is zero when there is
         no data in the file.
@@ -21,7 +37,7 @@ class Test_Basics:
         s = Splitter(filename)
         assert s.size == 0
 
-    def test_size(self, data_factory: Callable[[str | bytes], Path]):
+    def test_size(self, data_factory: Callable[[str | bytes], Path]):  # noqa: F811
         """
         A Splitter should have a 'size' attribute holding the length of the file data.
         """
@@ -39,7 +55,9 @@ class Test_Chunks_By_Number_Of_Chunks:
 
     @pytest.mark.parametrize("n_chunks", (2, 3, 10, 100))
     def test_missing_pattern(
-        self, data_factory: Callable[[str | bytes], Path], n_chunks: int
+        self,
+        data_factory: Callable[[str | bytes], Path],  # noqa: F811
+        n_chunks: int,
     ):
         """
         Test that when the pattern the data file is split on is missing we get one
@@ -57,7 +75,7 @@ class Test_Chunks_By_Number_Of_Chunks:
         offset, length = chunks[0]
         assert chunk_from_file(filename, offset, length) == data
 
-    def test_pattern_too_early(self, data_factory: Callable[[str | bytes], Path]):
+    def test_pattern_too_early(self, data_factory: Callable[[str | bytes], Path]):  # noqa: F811
         """
         Test that when the pattern the data file is split on appears early in the
         file that it is missed when two chunks are requested.
@@ -76,7 +94,9 @@ class Test_Chunks_By_Number_Of_Chunks:
 
     @pytest.mark.parametrize("n_chunks", (2, 3, 10, 100))
     def test_one_pattern(
-        self, data_factory: Callable[[str | bytes], Path], n_chunks: int
+        self,
+        data_factory: Callable[[str | bytes], Path],  # noqa: F811
+        n_chunks: int,
     ):
         """
         Test that when the pattern the data file is split on appears late in the
@@ -96,7 +116,7 @@ class Test_Chunks_By_Number_Of_Chunks:
         for (offset, length), data in zip(chunks, (data_1, data_2)):
             assert chunk_from_file(filename, offset, length) == data
 
-    def test_one_pattern_one_chunk(self, data_factory: Callable[[str | bytes], Path]):
+    def test_one_pattern_one_chunk(self, data_factory: Callable[[str | bytes], Path]):  # noqa: F811
         """
         Test that when the pattern the data file is split on appears in the
         file that it is not found when one chunk is requested.
@@ -116,7 +136,8 @@ class Test_Chunks_By_Number_Of_Chunks:
         assert chunk_from_file(filename, offset, length) == data
 
     def test_one_pattern_one_chunk_no_zero_chunk(
-        self, data_factory: Callable[[str | bytes], Path]
+        self,
+        data_factory: Callable[[str | bytes], Path],  # noqa: F811
     ):
         """
         Test that when the pattern the data file is split on appears in the
@@ -132,7 +153,7 @@ class Test_Chunks_By_Number_Of_Chunks:
         chunks = list(s.chunks(1, None, pattern, return_zero_chunk=False))
         assert chunks == []
 
-    def test_fasta_str(self, data_factory: Callable[[str | bytes], Path]):
+    def test_fasta_str(self, data_factory: Callable[[str | bytes], Path]):  # noqa: F811
         """
         Test that several FASTA str sequences can be found.
         """
@@ -150,7 +171,7 @@ class Test_Chunks_By_Number_Of_Chunks:
         for (offset, length), data in zip(chunks, (data_1, data_2)):
             assert chunk_from_file(filename, offset, length) == data
 
-    def test_fasta_bytes(self, data_factory: Callable[[str | bytes], Path]):
+    def test_fasta_bytes(self, data_factory: Callable[[str | bytes], Path]):  # noqa: F811
         """
         Test that several FASTA bytes sequences can be found.
         """
@@ -169,7 +190,8 @@ class Test_Chunks_By_Number_Of_Chunks:
             assert chunk_from_file(filename, offset, length, binary=True) == data
 
     def test_fasta_newline_plus_id_bytes(
-        self, data_factory: Callable[[str | bytes], Path]
+        self,
+        data_factory: Callable[[str | bytes], Path],  # noqa: F811
     ):
         """
         Test that several FASTA bytes sequences can be found when the pattern
@@ -191,7 +213,9 @@ class Test_Chunks_By_Number_Of_Chunks:
 
     @pytest.mark.parametrize("n_chunks", (2, 10, 100))
     def test_fasta_newline_plus_id_ignore_newline_str(
-        self, data_factory: Callable[[str | bytes], Path], n_chunks: int
+        self,
+        data_factory: Callable[[str | bytes], Path],  # noqa: F811
+        n_chunks: int,
     ):
         """
         Test that several FASTA bytes sequences can be found when the pattern
@@ -213,7 +237,9 @@ class Test_Chunks_By_Number_Of_Chunks:
 
     @pytest.mark.parametrize("n_chunks", (4, 10, 100))
     def test_fasta_newline_plus_id_ignore_newline_bytes(
-        self, data_factory: Callable[[str | bytes], Path], n_chunks: int
+        self,
+        data_factory: Callable[[str | bytes], Path],  # noqa: F811
+        n_chunks: int,
     ):
         """
         Test that several FASTA bytes sequences can be found when the pattern

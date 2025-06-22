@@ -1,7 +1,9 @@
 import os
 
+from .data import data_factory  # noqa: F401
 
-def test_data_factory(data_factory):
+
+def test_data_factory(data_factory):  # noqa: F811
     filename = data_factory("hello world")
 
     with open(filename) as f:

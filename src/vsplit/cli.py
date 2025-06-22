@@ -7,13 +7,13 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any
 
-from vsplit import (
+from vsplit.chunk import env_str, expand_command
+from vsplit.splitter import Splitter
+from vsplit.vars import (
     VSPLIT_CHUNK_OFFSETS_FILENAME_VAR,
     VSPLIT_FILENAME_VAR,
     VSPLIT_N_CHUNKS_VAR,
 )
-from vsplit.chunk import env_str, expand_command
-from vsplit.splitter import Splitter
 
 
 def main() -> None:
@@ -218,7 +218,7 @@ def save_offsets(filename: str | None, chunks: list[tuple[int, int]]) -> Path:
     return path
 
 
-def print_offsets(splitter: Splitter, chunks: list[tuple[int, int]], prefix: int):
+def print_offsets(splitter: Splitter, chunks: list[tuple[int, int]], prefix: int) -> None:
     """
     Print TAB-separated split offsets, lengths, and (optionally) a prefix from the
     file for each chunk.
