@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import io
 import os
 from pathlib import Path
 from shlex import quote
 from typing import IO, Any
 
-from vsplit import (
+from vsplit.vars import (
     VSPLIT_CHUNK_OFFSETS_FILENAME_VAR,
     VSPLIT_FILENAME_VAR,
     VSPLIT_INDEX_VAR,
@@ -14,7 +16,7 @@ from vsplit import (
 )
 
 
-class FileSectionReader(io.IOBase):
+class FileChunk(io.IOBase):
     """
     A file-like object that provides access to a section of a file.
 
@@ -107,9 +109,7 @@ class FileSectionReader(io.IOBase):
 
         self._file.seek(self.offset + self._position)
 
-        # line: str | bytes
-
-        # Read byte by byte until newline or size limit
+        # Read byte-by-byte until newline or size limit
         if self.binary:
             line = b""
             newline = b"\n"
@@ -129,7 +129,9 @@ class FileSectionReader(io.IOBase):
         return line
 
     def readlines(self, hint: int = -1, /) -> list[str | bytes]:
-        """Read all lines from the section."""
+        """
+        Read all lines from the chunk.
+        """
         lines = []
         total_read = 0
         while True:
@@ -143,7 +145,9 @@ class FileSectionReader(io.IOBase):
         return lines
 
     def seek(self, offset: int, whence: int = os.SEEK_SET, /) -> int:
-        """Seek to a position within the section."""
+        """
+        Seek to a position within the chunk.
+        """
         if whence == os.SEEK_SET:
             new_pos = offset
         elif whence == os.SEEK_CUR:
@@ -158,44 +162,30 @@ class FileSectionReader(io.IOBase):
         return self._position
 
     def tell(self) -> int:
-        """Return current position within the section."""
+        """
+        Return current position within the chunk.
+        """
         return self._position
 
-    def __iter__(self, /) -> "FileSectionReader":
-        """Iterate over lines in the section."""
+    def __iter__(self, /) -> FileChunk:
+        """
+        Iterate over lines in the section.
+        """
         return self
 
     def __next__(self, /) -> str | bytes:
+        """
+        Get the next line from the chunk.
+        """
         if not (line := self.readline()):
             raise StopIteration
         return line
 
 
-def chunk_from_file(
-    filename: Path,
-    offset: int,
-    length: int,
-    binary: bool = False,
-    return_data: bool = True,
-) -> str | bytes | FileSectionReader:
+def _chunk_from_env(binary: bool = False) -> FileChunk:
     """
-    Read a chunk of data from a file.
-    """
-    if return_data:
-        with open(filename, "rb" if binary else "rt") as fp:
-            fp.seek(offset, os.SEEK_SET)
-            data = fp.read(length)
-
-        return data
-    else:
-        return FileSectionReader(filename, offset, length, binary)
-
-
-def chunk_from_env(
-    binary: bool = False, return_data: bool = True
-) -> str | bytes | FileSectionReader:
-    """
-    Read a chunk from a file based on environment variables.
+    Helper function to prepare to read a chunk from a file based on
+    environment variables.
     """
     values = []
 
@@ -207,24 +197,14 @@ def chunk_from_env(
 
     filename, offset, length = Path(values[0]), int(values[1]), int(values[2])
 
-    f = chunk_from_file if return_data else FileSectionReader
-    return f(filename, offset, length, binary)
+    return FileChunk(filename, offset, length, binary)
 
 
-def chunk_from_slurm_env(
-    binary: bool = False, return_data: bool = True
-) -> str | bytes | FileSectionReader:
+def _chunk_from_slurm_env(chunk_index: int, binary: bool = False) -> FileChunk:
     """
-    Read a chunk from a file based on environment variables, including the
-    SLURM job array index.
+    Helper function to prepare to read a chunk from a file based on
+    environment variables including the SLURM_ARRAY_TASK_ID.
     """
-    try:
-        chunk_index = int(os.environ["SLURM_ARRAY_TASK_ID"])
-    except KeyError as err:
-        raise KeyError(
-            "Variable SLURM_ARRAY_TASK_ID is not set in the environment!"
-        ) from err
-
     values = []
 
     for var in (
@@ -250,8 +230,16 @@ def chunk_from_slurm_env(
                 f"{str(chunks_file)!r}. The file only contains {index + 1} lines."
             )
 
-    f = chunk_from_file if return_data else FileSectionReader
-    return f(filename, offset, length, binary)
+    return FileChunk(filename, offset, length, binary)
+
+
+def chunk_from_env(binary: bool = False) -> FileChunk:
+    try:
+        chunk_index = int(os.environ["SLURM_ARRAY_TASK_ID"])
+    except KeyError:
+        return _chunk_from_env(binary)
+    else:
+        return _chunk_from_slurm_env(chunk_index, binary)
 
 
 def env_str(

@@ -1,6 +1,6 @@
-VSPLIT_FILENAME_VAR = "VSPLIT_INPUT_FILENAME"
-VSPLIT_INDEX_VAR = "VSPLIT_CHUNK_INDEX"
-VSPLIT_LENGTH_VAR = "VSPLIT_LENGTH"
-VSPLIT_N_CHUNKS_VAR = "VSPLIT_N_CHUNKS"
-VSPLIT_OFFSET_VAR = "VSPLIT_OFFSET"
-VSPLIT_CHUNK_OFFSETS_FILENAME_VAR = "VSPLIT_CHUNK_OFFSETS_FILENAME"
+from vsplit.chunk import FileChunk, chunk_from_env
+
+__all__ = ["FileChunk", "chunk_from_env"]
+
+# Don't complain that these are unused.
+_ = FileChunk, chunk_from_env
