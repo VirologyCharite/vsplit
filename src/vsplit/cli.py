@@ -121,12 +121,6 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--binary",
-        action="store_true",
-        help="Match using a Python byte pattern.",
-    )
-
-    parser.add_argument(
         "--sbatch",
         action="store_true",
         help=(
@@ -163,17 +157,9 @@ def main() -> None:
 
     pattern = literal_eval(args.pattern) if args.eval_pattern else args.pattern
 
-    # If a bytes pattern is given, make sure we open the file in a binary mode. We could
-    # check to see if --binary was given and warn (or exit) if not, but it seems
-    # reasonable to assume that that's what the user intended if they went to the
-    # trouble of giving us a bytes pattern and we should be relaxed and not insist that
-    # they also specify --binary.
-    if isinstance(pattern, bytes):
-        args.binary = True
-
     splitter = Splitter(
         Path(args.filename),
-        binary=args.binary,
+        binary=isinstance(pattern, bytes),
         buffer_size=args.buffer_size,
     )
 
@@ -194,9 +180,7 @@ def main() -> None:
         if args.sbatch:
             print_sbatch_command(splitter, chunks, args.command, chunk_offsets_path)
         else:
-            print_commands(
-                splitter, chunks, args.command, args.chunk_offsets_filename, args.env
-            )
+            print_commands(splitter, chunks, args.command, chunk_offsets_path, args.env)
     else:
         print_offsets(splitter, chunks, args.prefix)
 

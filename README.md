@@ -288,13 +288,23 @@ that your program can then examine and use to get its chunk:
 
 ```sh
 $ vsplit --env --command process-chunk --pattern \> --n-chunks 3 sequences.fasta
-env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 VSPLIT_CHUNK_OFFSETS_FILENAME=None \
+env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
+    VSPLIT_CHUNK_OFFSETS_FILENAME=/var/folders/zw/s4wf68h12lxfcx1ggjmf0nq40000gn/T/tmp8tzjf1dk/chunks.tsv \
     VSPLIT_CHUNK_INDEX=0 VSPLIT_LENGTH=170570581519 VSPLIT_OFFSET=0 process-chunk
-env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 VSPLIT_CHUNK_OFFSETS_FILENAME=None \
+env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
+    VSPLIT_CHUNK_OFFSETS_FILENAME=/var/folders/zw/s4wf68h12lxfcx1ggjmf0nq40000gn/T/tmp8tzjf1dk/chunks.tsv \
     VSPLIT_CHUNK_INDEX=1 VSPLIT_LENGTH=170633512463 VSPLIT_OFFSET=170570581519 process-chunk
-env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 VSPLIT_CHUNK_OFFSETS_FILENAME=None \
+env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
+    VSPLIT_CHUNK_OFFSETS_FILENAME=/var/folders/zw/s4wf68h12lxfcx1ggjmf0nq40000gn/T/tmp8tzjf1dk/chunks.tsv \
     VSPLIT_CHUNK_INDEX=2 VSPLIT_LENGTH=170244097555 VSPLIT_OFFSET=341204093982 process-chunk
 ```
+
+Note that the chunk offsets filename has been set by `vsplit` (in a directory
+created by the Python `tempfile.mkdtemp` function). You can pass an explicit
+filename via `--chunk-offsets-filename`, if you prefer. This file will
+eventually be removed by your operating system - `vsplit` cannot remove it
+because you might be needing it in your script (if you are relying on the
+chunk index variable as opposed to the offset and length variables).
 
 If your script is in Python, there is a convenience function for reading the
 environment variables and getting you a `FileChunk` instance. E.g.:
@@ -332,11 +342,17 @@ offset/length information. Obviously, this must be a file that will be
 accessible to your SLURM jobs once they are started, otherwise your script
 will not be able to determine its chunk details.
 
+## Notes
+
+If `vsplit` is running for a long time (more than a couple of seconds)
+without printing anything, it means your pattern is not being found. The most
+likely cause of this is forgetting to use `--eval-pattern` to cause embedded
+backslash indicators to be evaluated.
+
 ## Details
 
 Still to be documented:
 
-* Reading in binary mode.
 * The `--max-pattern-length` argument.
 * The `--buffer-size` argument.
 
