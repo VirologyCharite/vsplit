@@ -8,6 +8,7 @@ from tempfile import mkdtemp
 from typing import Any
 
 from vsplit.chunk import env_str, expand_command
+from vsplit.fs import block_size
 from vsplit.splitter import Splitter
 from vsplit.vars import (
     VSPLIT_CHUNK_OFFSETS_FILENAME_VAR,
@@ -19,6 +20,7 @@ from vsplit.vars import (
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Virtually split a file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     parser.add_argument(
@@ -45,13 +47,15 @@ def main() -> None:
         help="The pattern to split on.",
     )
 
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group(required=True)
+
+    group.add_argument(
         "--n-chunks",
         type=int,
         help="The (approximate) number of chunks to produce.",
     )
 
-    parser.add_argument(
+    group.add_argument(
         "--chunk-size",
         type=int,
         help="The (approximate) size of the chunks to produce.",
@@ -60,7 +64,11 @@ def main() -> None:
     parser.add_argument(
         "--buffer-size",
         type=int,
-        help="The size (in bytes) of the buffer to be reading the file into.",
+        default=block_size(),
+        help=(
+            "The size (in bytes) of the buffer to read chunks of the file from when "
+            "searching for the split pattern."
+        ),
     )
 
     parser.add_argument(
@@ -112,6 +120,11 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--sbatch-args",
+        help="Additional arguments to pass to sbatch (implies --sbatch).",
+    )
+
+    parser.add_argument(
         "--env",
         action="store_true",
         help=(
@@ -139,6 +152,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    if args.sbatch_args:
+        args.sbatch = True
 
     if args.sbatch:
         if not args.command:
@@ -178,7 +194,9 @@ def main() -> None:
 
     if args.command:
         if args.sbatch:
-            print_sbatch_command(splitter, chunks, args.command, chunk_offsets_path)
+            print_sbatch_command(
+                splitter, chunks, args.command, chunk_offsets_path, args.sbatch_args
+            )
         else:
             print_commands(splitter, chunks, args.command, chunk_offsets_path, args.env)
     else:
@@ -260,12 +278,19 @@ def print_sbatch_command(
     chunks: list[tuple[int, int]],
     command: str,
     chunk_offsets_path: Path,
+    sbatch_args: str | None,
 ) -> None:
     env = env_str(
         filename=splitter.filename,
         n_chunks=len(chunks),
         chunk_offsets_filename=chunk_offsets_path,
     )
+
+    export = ",".join((
+        VSPLIT_FILENAME_VAR,
+        VSPLIT_N_CHUNKS_VAR,
+        VSPLIT_CHUNK_OFFSETS_FILENAME_VAR,
+    ))
 
     command = expand_command(
         command=command,
@@ -275,10 +300,7 @@ def print_sbatch_command(
         allow_single_chunk_variables=False,
     )
 
-    export = ",".join((
-        VSPLIT_FILENAME_VAR,
-        VSPLIT_N_CHUNKS_VAR,
-        VSPLIT_CHUNK_OFFSETS_FILENAME_VAR,
-    ))
-
-    print(f"{env} sbatch --array=0-{len(chunks) - 1} --export {export} {command}")
+    print(
+        f"{env} sbatch {(sbatch_args or '') + ' '}--array=0-{len(chunks) - 1} "
+        f"--export {export} {command}"
+    )

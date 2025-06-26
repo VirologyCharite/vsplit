@@ -26,7 +26,7 @@ $ pip install vsplit
 ```
 
 Or if you have [uv](https://docs.astral.sh/uv/) installed, you can use it to
-run vsplit directly:
+run `vsplit` directly:
 
 ```sh
 $ uvx vsplit ....
@@ -40,7 +40,7 @@ is about 0.5TB (511,448,191,537 bytes).
 
 ## Basic usage
 
-### Giving a number of chunks
+### You provide a desired number of chunks
 
 The simplest usage is to just print details of the file chunks. You give a
 pattern to split the file on and the number of chunks you want and get
@@ -67,7 +67,7 @@ better line things up.
 You can pipe that outut into `awk '{sum += $2} END {print sum}'` if you want
 to quickly confirm that the sum of all the chunk lengths is 511,448,191,537.
 
-### Giving a chunk size
+### You provide a desired chunk size
 
 Instead of giving a number of chunks, you can give a chunk size:
 
@@ -116,8 +116,8 @@ $ vsplit --prefix 20 --pattern \> --chunk-size 50000000000 sequences.fasta
 ### The file is not examined by line, so your pattern can span lines
 
 In the above example, we are splitting on `>`. In a FASTA file it might be
-more reliable to split on the pattern `"\n">` (i.e., a newline followed by a
-`>`). The newline can be embedded in the pattern as follows:
+more reliable to split on the pattern `"\n>"` (i.e., a newline followed by a
+`>`). You can embed the newline in the pattern as follows:
 
 ```sh
 $ vsplit --prefix 20 --pattern '"\n>"' --eval-pattern --chunk-size 50000000000 sequences.fasta
@@ -136,29 +136,29 @@ $ vsplit --prefix 20 --pattern '"\n>"' --eval-pattern --chunk-size 50000000000 s
 
 In the above, the extra `--eval-pattern` argument tells `vsplit` to use
 Python's `eval` function to evaluate the string pattern. This allows you to
-use the regular backslash escaping to specify any string.
+use the regular backslash escaping to specify any string. The single quotes
+are used to make sure the double-quoted string is passed through to Python
+instead of being interpreted by your shell.
 
 ### Splitting on a byte pattern
 
 You can also split on a byte pattern using Python's convention of putting a
-`b` before your pattern:
+`b` before your string pattern:
 
 ```sh
 $ vsplit --prefix 20 --pattern 'b"\n>"' --eval-pattern --chunk-size 50000000000 sequences.fasta
-# Output identical to the previous command.
+# Output is identical to the command above.
 ```
 
 ### Dropping a prefix from the matched pattern
 
 In the previous examples where we split on `\n>`, you can see that the
 initial chunk (beginning `>hCoV-19/Australia/N`) does not start with the
-split pattern. That's because `vsplit` jumps to an offset in the file without
-even looking at the initial data (that's kind of the point, after all). The
-default is to return the initial chunk (before the first instance of the
-pattern that is found; note that this may not be the very first instance of
-the pattern, it's just the first one found after the first jump within the
-file). If you don't want this initial chunk to be returned, you can use
-`--skip-zero-chunk`:
+split pattern. That's because `vsplit` jumps to its first offset in your file
+without even looking at the initial data (that's kind of the point, after
+all). The default is to return the details of the initial chunk (before the
+first instance of the pattern is located). If you don't want this initial
+chunk to be returned, you can use `--skip-zero-chunk`:
 
 ```sh
 $ vsplit --skip-zero-chunk --prefix 20 --pattern '"\n>"' --eval-pattern --chunk-size 50000000000 sequences.fasta
@@ -323,46 +323,59 @@ to ask `vsplit` to print an `sbatch` command that will submit a job array to
 launch a task for each chunk:
 
 ```sh
-$ vsplit --sbatch --chunk-offsets-filename chunks.tsv --command process-chunk --pattern \> --n-chunks 3 sequences.fasta
+$ vsplit --sbatch --chunk-offsets-filename chunks.tsv --command process-chunk --pattern \> \
+         --n-chunks 100 sequences.fasta
 env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 VSPLIT_CHUNK_OFFSETS_FILENAME=chunks.tsv \
-    sbatch --array=0-2 --export VSPLIT_INPUT_FILENAME,VSPLIT_N_CHUNKS,VSPLIT_CHUNK_OFFSETS_FILENAME process-chunk
+    sbatch --array=0-99 \
+    --export VSPLIT_INPUT_FILENAME,VSPLIT_N_CHUNKS,VSPLIT_CHUNK_OFFSETS_FILENAME process-chunk
 ```
 
 As in the previous example, the chunk details will be communicated by
-environment variables (`--env` is implied if you use `--sbatch`) and your
-script can use `chunk_from_env` to read its chunk, exactly as above (the
-chunk index is obtained from the SLURM `SLURM_ARRAY_TASK_ID` environment
-variable for the job array).
+environment variables (`--env` is implied if you use `--sbatch`).
 
-In this case you will need to explicitly specify (via
+If your script is written in Python, you can use the `chunk_from_env`
+function to read its chunk, exactly as above (the chunk index is obtained
+from the SLURM `SLURM_ARRAY_TASK_ID` environment variable for the job array
+and its offset and length are taken from the corresponding line in the chunks
+TSV file (`chunks.tsv` in this example).
+
+When using `--sbatch`, you must explicitly specify (via
 `--chunk-offsets-filename`) the location for `vsplit` to store the chunk
-offset/length information. Obviously, this must be a file that will be
-accessible to your SLURM jobs once they are started, otherwise your script
+offset/length information. Obviously, this will need to be a file that will
+be accessible to your SLURM jobs once they are started, otherwise your script
 will not be able to determine its chunk details.
 
-## Notes
+You can specify additional arguments to be given to `sbatch` using the
+`--sbatch-args` option (see `man sbatch` for the many options, including
+specification of output files). Because `vsplit` does not actually run your
+command (it just prints it), you can always insert additional `sbatch`
+arguments manually before running the command.
 
-If `vsplit` is running for a long time (more than a couple of seconds)
+## Additional details
+
+### If vsplit is slow
+
+If `vsplit` is running for a long time (more than a handful of seconds)
 without printing anything, it means your pattern is not being found. The most
 likely cause of this is forgetting to use `--eval-pattern` to cause embedded
 backslash indicators to be evaluated.
 
-## Additional details
-
 ### Buffer size
 
 `vsplit` has a `--buffer-size` argument that can be used to set the size of
-the chunks it reads when looking for your pattern. The default is 4096
-bytes. If the pieces of your file (as delimited by your pattern) tend to be
-bigger than this, you can increase this value to get a small speed
-gain. `vsplit` will typically be very fast so you are not likely to need
-this option.
+the chunks it reads when looking for your pattern. The default is the optimal
+filesystem I/O block size (obtained from `os.stat` by Python). If the pieces
+of your file (as delimited by your pattern) tend to be bigger than this, you
+can increase this value to possibly get a speed gain. `vsplit` will typically
+be very fast so you are not likely to need this option.
 
 To give an example, the `sequences.fasta` file used in the examples above
 contains SARS-CoV-2 genome sequences that are each about 30,000 characters.
 The `>` separator between FASTA sequences will therefore only be found after
-reading ~30,000 characters, so a default buffer size of 4096 will typically
-result in seven reads before the next `>` pattern is found.
+reading ~30,000 characters, so if the default buffer size is 4096, there will
+typically be seven reads before the next `>` pattern is found. You can see
+the default buffer size (for the filesystem where you run the command from)
+in the help text for `--buffer-size` when you run `vsplit --help`.
 
 Here's example timing for identifying 100 chunks using the default buffer
 size and a 32K one:
