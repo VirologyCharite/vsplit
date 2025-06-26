@@ -236,7 +236,11 @@ with FileChunk(filename, offset, length) as fp:
 ```
 
 Here `fp` is a file-like object that will return just the data from the chunk
-of the original (virtually split) file.
+of the original (virtually split) file. If you use it via
+[with](https://docs.python.org/3/reference/compound_stmts.html#with) in a
+Context Manager (as in the above two examples), the file will be opened and
+closed for you. If you don't want to do that, you can call the file-object
+methods on the `FileChunk` instance (e.g., `open`, `close`, `seek`, etc).
 
 ### Passing chunk information to your script
 
