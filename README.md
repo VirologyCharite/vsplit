@@ -150,16 +150,15 @@ $ vsplit --prefix 20 --pattern 'b"\n>"' --eval-pattern --chunk-size 50000000000 
 
 ### Dropping a prefix from the matched pattern
 
-In the previous examples we split on `\n>`. There are two things to note.
-
-First of all, you can see that the initial chunk (beginning
-`>hCoV-19/Australia/N`) does not start with the split pattern. That's because
-`vsplit` jumps to an offset in the file without even looking at the initial
-data (that's kind of the point, after all). The default is to return the
-initial chunk (before the first instance of the pattern that is found; note
-that this may not be the very first instance of the pattern, it's just the
-first one found after the first jump within the file). If you don't want this
-initial chunk to be returned, you can use `--skip-zero-chunk`:
+In the previous examples where we split on `\n>`, you can see that the
+initial chunk (beginning `>hCoV-19/Australia/N`) does not start with the
+split pattern. That's because `vsplit` jumps to an offset in the file without
+even looking at the initial data (that's kind of the point, after all). The
+default is to return the initial chunk (before the first instance of the
+pattern that is found; note that this may not be the very first instance of
+the pattern, it's just the first one found after the first jump within the
+file). If you don't want this initial chunk to be returned, you can use
+`--skip-zero-chunk`:
 
 ```sh
 $ vsplit --skip-zero-chunk --prefix 20 --pattern '"\n>"' --eval-pattern --chunk-size 50000000000 sequences.fasta
@@ -174,10 +173,13 @@ $ vsplit --skip-zero-chunk --prefix 20 --pattern '"\n>"' --eval-pattern --chunk-
 501246926866    10201264671 '\n>hCoV-19/USA/SC-CDC'
 ```
 
-Second, in this example, we actually don't want the leading newline to be
-part of the chunk. You can indicate that a certain number of leading
-characters be dropped from the pattern in the returned chunk using
-`--remove-prefix` to indicate a number of prefix characters to drop:
+### Dropping a prefix from the matched pattern
+
+Also in the previous examples where we split on `\n>`, we actually don't want
+the leading newline to be part of the chunk. You can indicate that a certain
+number of leading characters be dropped from the pattern in the returned
+chunk using `--remove-prefix` to indicate a number of prefix characters to
+drop:
 
 ```sh
 $ vsplit --remove-prefix 1 --prefix 20 --pattern '"\n>"' --eval --chunk-size 50000000000 sequences.fasta
