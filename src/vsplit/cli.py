@@ -96,12 +96,6 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--offsets",
-        action="store_true",
-        help="Just print the offsets and lengths of chunks.",
-    )
-
-    parser.add_argument(
         "--skip-zero-chunk",
         action="store_false",
         dest="return_zero_chunk",
@@ -167,13 +161,21 @@ def main() -> None:
                 "can look up their chunk details."
             )
 
+    pattern = literal_eval(args.pattern) if args.eval_pattern else args.pattern
+
+    # If a bytes pattern is given, make sure we open the file in a binary mode. We could
+    # check to see if --binary was given and warn (or exit) if not, but it seems
+    # reasonable to assume that that's what the user intended if they went to the
+    # trouble of giving us a bytes pattern and we should be relaxed and not insist that
+    # they also specify --binary.
+    if isinstance(pattern, bytes):
+        args.binary = True
+
     splitter = Splitter(
         Path(args.filename),
         binary=args.binary,
         buffer_size=args.buffer_size,
     )
-
-    pattern = literal_eval(args.pattern) if args.eval_pattern else args.pattern
 
     chunks = list(
         splitter.chunks(
@@ -229,7 +231,7 @@ def print_offsets(splitter: Splitter, chunks: list[tuple[int, int]], prefix: int
             fields: list[Any] = [offset, length]
             if prefix:
                 fp.seek(offset, os.SEEK_SET)
-                fields.append(fp.read(prefix))
+                fields.append(f"{fp.read(prefix)!r}")
             writerow(fields)
 
 
