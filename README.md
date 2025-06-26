@@ -284,8 +284,6 @@ Alternatively, you might prefer to run `vsplit` with `--env` and a command to
 have it print `env` (see `man env`) commands to set environment variables
 that your program can then examine and use to get its chunk:
 
--------------------------- Fix the None in the filename in the following !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 ```sh
 $ vsplit --env --command process-chunk --pattern \> --n-chunks 3 sequences.fasta
 env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
@@ -349,12 +347,54 @@ without printing anything, it means your pattern is not being found. The most
 likely cause of this is forgetting to use `--eval-pattern` to cause embedded
 backslash indicators to be evaluated.
 
-## Details
+## Additional details
 
-Still to be documented:
+### Buffer size
 
-* The `--max-pattern-length` argument.
-* The `--buffer-size` argument.
+`vsplit` has a `--buffer-size` argument that can be used to set the size of
+the chunks it reads when looking for your pattern. The default is 4096
+bytes. If the pieces of your file (as delimited by your pattern) tend to be
+bigger than this, you can increase this value to get a small speed
+gain. `vsplit` will typically be very fast so you are not likely to need
+this option.
+
+To give an example, the `sequences.fasta` file used in the examples above
+contains SARS-CoV-2 genome sequences that are each about 30,000 characters.
+The `>` separator between FASTA sequences will therefore only be found after
+reading ~30,000 characters, so a default buffer size of 4096 will typically
+result in seven reads before the next `>` pattern is found.
+
+Here's example timing for identifying 100 chunks using the default buffer
+size and a 32K one:
+
+```sh
+$ time vsplit --pattern \> --n-chunks 100 sequences.fasta > /dev/null
+
+________________________________________________________
+Executed in    3.90 secs    fish           external
+   usr time    2.00 secs    0.44 millis    2.00 secs
+   sys time    1.62 secs    2.21 millis    1.62 secs
+
+$ time vsplit --buffer-size 32000 --pattern \> --n-chunks 100 sequences.fasta > /dev/null
+
+________________________________________________________
+Executed in   70.06 millis    fish           external
+   usr time   38.81 millis    0.39 millis   38.42 millis
+   sys time   14.16 millis    1.73 millis   12.44 millis
+```
+
+### Maximum pattern length
+
+`vsplit` reads chunks of the file in its search for your pattern. If the
+pattern is not found in a chunk, it will read more of the file and examine
+that. To guard against the situation where the chunk it reads ends in the
+middle of your pattern, it prepends the final part of the current chunk to
+the next chunk. By default, the number of bytes kept is the length of your
+pattern minus one. In the case of a fixed-length pattern, this will always be
+sufficient to ensure your pattern is not missed. But there is a
+`--max-pattern-length` option that you can set to give an alternate value.
+This will be useful when support for regular expression patterns is
+implemented.
 
 ## Todo
 
