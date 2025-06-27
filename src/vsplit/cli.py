@@ -266,7 +266,7 @@ def print_commands(
             chunk_offsets_filename=chunk_offsets_path,
         )
 
-        print(f"{e}{quote(c)}")
+        print(f"{e}{c}")
 
 
 def print_sbatch_command(

@@ -184,7 +184,7 @@ chunk using `--remove-prefix` to indicate a number of prefix characters to
 drop:
 
 ```sh
-$ vsplit --remove-prefix 1 --prefix 20 --pattern '"\n>"' --eval \
+$ vsplit --remove-prefix 1 --prefix 20 --pattern '"\n>"' --eval-pattern \
          --chunk-size 50000000000 sequences.fasta
 0               50014110718 '>hCoV-19/Australia/N'
 50014110719     50225394686 '>hCoV-19/Chongqing/Y'
@@ -237,7 +237,7 @@ with FileChunk(filename, offset, length) as fp:
 # or
 
 with FileChunk(filename, offset, length) as fp:
-    print(line.read())
+    print(fp.read(100))
 ```
 
 Here `fp` is a file-like object that will return just the data from the chunk
@@ -271,23 +271,48 @@ process-chunk --filename sequences.fasta --chunk-offset 170570581519 --chunk-len
 process-chunk --filename sequences.fasta --chunk-offset 341204093982 --chunk-length 170244097555
 ```
 
-In the above, you use `[x]` markers on your command line to indicate things
-that should be replaced with per-chunk information.  The full set of
-indicators is
+In the above, you use `[...]` markers on your command line as placeholders
+for things that should be replaced with per-chunk information.  The full set
+of indicators is
 
-    [F]: The (shell-quoted) filename.
+    [C]: The (shell-quoted) name of the file containing the TAB-separated chunk offset/lengths.
+    [F]: The (shell-quoted) input filename (i.e., of the file that was virtually split).
     [I]: The (zero-based) chunk index.
     [0I]: The (zero-based) chunk index, but padded with leading zeroes.
     [L]: The chunk length.
     [N]: The overall number of chunks found.
     [O]: The chunk offset.
-    [C]: The (shell-quoted) name of the file containing the TAB-separated chunk offset/lengths.
 
-These are all provided but for any particular program only some subset will
+These are all always provided but for any particular program only some subset will
 be used. Note that there is no reliance on Python here, your program could be
 written in any language and then just open the file and read its data however
 it likes.  But if you are in Python you can use the `FileChunk` class
 described above.
+
+The usefulness of the `[0I]` indicator becomes apparent when more than nine
+chunks are found. In the below, the output files have leading zeroes in their
+names, which allows a final `cat OUT-*.txt` command to collect the processing
+results in the order they appear in the input file.
+
+```sh
+$ vsplit --command 'process-chunk --filename [F] --chunk-offset [O] --chunk-length [L] > OUT-[0I].txt' \
+         --pattern \> --n-chunks 15 ~/charite/gisaid/sequences/sequences.fasta
+process-chunk --filename sequences.fasta --chunk-offset 0            --chunk-length 34205860149 > OUT-00.txt
+process-chunk --filename sequences.fasta --chunk-offset 34205860149  --chunk-length 34109415733 > OUT-01.txt
+process-chunk --filename sequences.fasta --chunk-offset 68315275882  --chunk-length 34096546377 > OUT-02.txt
+process-chunk --filename sequences.fasta --chunk-offset 102411822259 --chunk-length 34096547906 > OUT-03.txt
+process-chunk --filename sequences.fasta --chunk-offset 136508370165 --chunk-length 34150924597 > OUT-04.txt
+process-chunk --filename sequences.fasta --chunk-offset 170659294762 --chunk-length 34098045237 > OUT-05.txt
+process-chunk --filename sequences.fasta --chunk-offset 204757339999 --chunk-length 34131767605 > OUT-06.txt
+process-chunk --filename sequences.fasta --chunk-offset 238889107604 --chunk-length 34097312053 > OUT-07.txt
+process-chunk --filename sequences.fasta --chunk-offset 272986419657 --chunk-length 34120831285 > OUT-08.txt
+process-chunk --filename sequences.fasta --chunk-offset 307107250942 --chunk-length 34558411061 > OUT-09.txt
+process-chunk --filename sequences.fasta --chunk-offset 341665662003 --chunk-length 34172301621 > OUT-10.txt
+process-chunk --filename sequences.fasta --chunk-offset 375837963624 --chunk-length 34496565557 > OUT-11.txt
+process-chunk --filename sequences.fasta --chunk-offset 410334529181 --chunk-length 34096549109 > OUT-12.txt
+process-chunk --filename sequences.fasta --chunk-offset 444431078290 --chunk-length 34245644597 > OUT-13.txt
+process-chunk --filename sequences.fasta --chunk-offset 478676722887 --chunk-length 32771468650 > OUT-14.txt
+```
 
 ### Using environment variables
 
@@ -309,7 +334,7 @@ env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
 ```
 
 Note that the chunk offsets filename refers to a `chunks.tsv` file in a
-temporary directory). You can pass an explicit filename via
+temporary directory. You can pass an explicit filename via
 `--chunk-offsets-filename`, if you prefer. This file will eventually be
 removed by your operating system. `vsplit` cannot remove it because you might
 be needing it in your script (if you are relying on the chunk index variable
