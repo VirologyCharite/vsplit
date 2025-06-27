@@ -44,7 +44,7 @@ is about 0.5TB (511,448,191,537 bytes).
 
 The simplest usage is to just print details of the file chunks. You give a
 pattern to split the file on and the number of chunks you want and get
-TAB-separated output with (zero-based) file offsets and chunk lengths:
+TAB-separated output with **zero-based** file offsets and chunk lengths:
 
 ```sh
 $ vsplit --pattern \> --n-chunks 10 sequences.fasta
@@ -113,7 +113,7 @@ $ vsplit --prefix 20 --pattern \> --chunk-size 50000000000 sequences.fasta
 500868074565    10580116972 >hCoV-19/USA/MN-CDC-
 ```
 
-### The file is not examined by line, so your pattern can span lines
+### The split pattern can span lines
 
 In the above example, we are splitting on `>`. In a FASTA file it might be
 more reliable to split on the pattern `"\n>"` (i.e., a newline followed by a
@@ -173,7 +173,7 @@ $ vsplit --skip-zero-chunk --prefix 20 --pattern '"\n>"' --eval-pattern --chunk-
 501246926866    10201264671 '\n>hCoV-19/USA/SC-CDC'
 ```
 
-### Dropping a prefix from the matched pattern
+### Discarding a fixed-length prefix from the matched pattern
 
 Also in the previous examples where we split on `\n>`, we actually don't want
 the leading newline to be part of the chunk. You can indicate that a certain
@@ -198,17 +198,18 @@ $ vsplit --remove-prefix 1 --prefix 20 --pattern '"\n>"' --eval --chunk-size 500
 
 ## Getting chunk information into your program
 
-So much for printing the basic information about chunks. The next step is to
-make use of this information in your program. You can obviously save the
-above TAB-separated output to a file, count the number of lines (i.e.,
-chunks), and run your program once for each chunk, passing an argument to
-indicate which chunk to read. Then your program simply opens the chunk
-offset/length file, reads to the line with the offset and length for the
-given chunk, opens the file, seeks to its offset, and reads just the
-correct amount of data (as given by the length).
+So much for printing the basic information about chunks.
 
-This is pretty straightforward, but it's a bit fiddly in several ways (mostly
-because you will need to keep track of how much data you have read).
+The next step is to make use of this information in your program. You can
+obviously save the above TAB-separated output to a file, count the number of
+lines (i.e., chunks), and run your program once for each chunk, passing an
+argument each time to indicate which chunk to read. Then, your program simply
+opens the chunk offset/length file, reads to the line with the offset and
+length for the given chunk, opens the file, seeks to its offset, and reads
+just the correct amount of data (as given by the length).
+
+This is pretty straightforward, but it's fiddly in several ways, mostly
+because you will need to keep track of how much data you have read.
 
 To make your life easier, `vsplit` offers several mechanisms to get data
 chunks to your program.
@@ -236,19 +237,21 @@ with FileChunk(filename, offset, length) as fp:
 ```
 
 Here `fp` is a file-like object that will return just the data from the chunk
-of the original (virtually split) file. If you use it via
-[with](https://docs.python.org/3/reference/compound_stmts.html#with) in a
-Context Manager (as in the above two examples), the file will be opened and
-closed for you. If you don't want to do that, you can call the file-object
-methods on the `FileChunk` instance (e.g., `open`, `close`, `seek`, etc).
+of the original (virtually split) file. If you use it via [the with
+statement](https://docs.python.org/3/reference/compound_stmts.html#with) in a
+context manager (as in the above two examples), the file will be opened and
+closed for you. If you don't want to do that, you can call regular
+file-object methods on the `FileChunk` instance (e.g., `open`, `close`,
+`seek`, etc).
 
 ### Passing chunk information to your script
 
 To help with the issue of getting chunk information to your program, `vsplit`
-gives you three options.  All three will print commands for you. You can
-store them in a file as a shell script, or pipe them into a shell process or
-into [GNU parallel](https://www.gnu.org/software/parallel/) to run the
-commands directly.
+gives you three options.  In all cases, `vsplit` simply print commands for
+you. You can store the commands in a file and run them as a shell script, or
+pipe them into a shell process or into [GNU
+parallel](https://www.gnu.org/software/parallel/) to run the commands
+directly.
 
 #### Using command line arguments
 
@@ -274,7 +277,7 @@ indicators is
     [L]: The chunk length.
     [N]: The overall number of chunks found.
     [O]: The chunk offset.
-    [C]: The (shell-quoted) name of the file with the TAB-separated chunk offset/lengths.
+    [C]: The (shell-quoted) name of the file containing the TAB-separated chunk offset/lengths.
 
 These are all provided but for any particular program only some subset will
 be used. Note that there is no reliance on Python here, your program could be
@@ -291,22 +294,22 @@ that your program can then examine and use to get its chunk:
 ```sh
 $ vsplit --env --command process-chunk --pattern \> --n-chunks 3 sequences.fasta
 env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
-    VSPLIT_CHUNK_OFFSETS_FILENAME=/var/folders/zw/s4wf68h12lxfcx1ggjmf0nq40000gn/T/tmp8tzjf1dk/chunks.tsv \
+    VSPLIT_CHUNK_OFFSETS_FILENAME=/tmp/tmp8tzjf1dk/chunks.tsv \
     VSPLIT_CHUNK_INDEX=0 VSPLIT_LENGTH=170570581519 VSPLIT_OFFSET=0 process-chunk
 env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
-    VSPLIT_CHUNK_OFFSETS_FILENAME=/var/folders/zw/s4wf68h12lxfcx1ggjmf0nq40000gn/T/tmp8tzjf1dk/chunks.tsv \
+    VSPLIT_CHUNK_OFFSETS_FILENAME=/tmp/tmp8tzjf1dk/chunks.tsv \
     VSPLIT_CHUNK_INDEX=1 VSPLIT_LENGTH=170633512463 VSPLIT_OFFSET=170570581519 process-chunk
 env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
-    VSPLIT_CHUNK_OFFSETS_FILENAME=/var/folders/zw/s4wf68h12lxfcx1ggjmf0nq40000gn/T/tmp8tzjf1dk/chunks.tsv \
+    VSPLIT_CHUNK_OFFSETS_FILENAME=/tmp/tmp8tzjf1dk/chunks.tsv \
     VSPLIT_CHUNK_INDEX=2 VSPLIT_LENGTH=170244097555 VSPLIT_OFFSET=341204093982 process-chunk
 ```
 
-Note that the chunk offsets filename has been set by `vsplit` (in a directory
-created by the Python `tempfile.mkdtemp` function). You can pass an explicit
-filename via `--chunk-offsets-filename`, if you prefer. This file will
-eventually be removed by your operating system - `vsplit` cannot remove it
-because you might be needing it in your script (if you are relying on the
-chunk index variable as opposed to the offset and length variables).
+Note that the chunk offsets filename refers to a `chunks.tsv` file in a
+temporary directory). You can pass an explicit filename via
+`--chunk-offsets-filename`, if you prefer. This file will eventually be
+removed by your operating system. `vsplit` cannot remove it because you might
+be needing it in your script (if you are relying on the chunk index variable
+as opposed to the offset and length variables).
 
 If your script is in Python, there is a convenience function for reading the
 environment variables and getting you a `FileChunk` instance. E.g.:
@@ -319,6 +322,51 @@ with chunk_from_env() as fp:
         print(line)
 
 ```
+
+Or if your program needs to read its chunk in binary mode:
+
+```python
+from vsplit import chunk_from_env
+
+with chunk_from_env(binary=True) as fp:
+    while data := fp.read(4095)
+        # Do something.
+```
+
+#### Complete examples: reading sequence ids from a FASTA file
+
+Here's a simple working example that reads the first FASTA sequence from a
+chunk and prints its id. The following is saved as `print-ids.py`:
+
+```python
+from Bio import SeqIO
+from vsplit import chunk_from_env
+
+for record in SeqIO.parse(chunk_from_env(), "fasta"):
+    print(record.id)
+    break
+```
+
+Which I can run using GNU `parallel` as follows:
+
+```sh
+$ vsplit --env --command print-ids.py --pattern \> --n-chunks 5 sequences.fasta | parallel
+hCoV-19/Brazil/PR-IPEC_VIGCV19_GPA_0359/2021|2021-04-26|2022-04-29
+hCoV-19/Spain/VC-FISABIO-100036/2021|2021-10-01|2022-03-17
+hCoV-19/USA/MI-UM-10049052165/2022|2022-12-26|2023-01-12
+hCoV-19/Japan/TKYkbm71284/2022|2022-12-12|2023-01-13
+hCoV-19/Australia/NSW-ICPMR-52165/2023|2023-11-07|2024-01-08
+```
+
+And here's a version that saves the output from each invocation of the
+program into a separate file:
+
+```sh
+$ vsplit --env --command 'print-ids.py > OUT-[0I].txt' --pattern \> --n-chunks 20 sequences.fasta | parallel
+```
+
+This creates 20 output files, named `OUT-00.txt` through `OUT-19.txt`, each
+containing one FASTA sequence id.
 
 ### Using a SLURM job array
 
