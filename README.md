@@ -87,7 +87,7 @@ $ vsplit --pattern \> --chunk-size 50000000000 sequences.fasta
 ```
 
 Note that the requested number of chunks or chunk size are just your
-suggestions. The actual values in the `split` output will depend heavily on
+suggestions. The actual values in the `vsplit` output will depend heavily on
 where the pattern is present in the data as well as the suggested values
 (which determine where `vsplit` jumps to in the file to look for the next
 splitting pattern).
@@ -151,7 +151,7 @@ $ vsplit --prefix 20 --pattern 'b"\n>"' --eval-pattern \
 # Output is identical to the command above.
 ```
 
-### Dropping a prefix from the matched pattern
+### Skipping the initial chunk
 
 In the previous examples where we split on `\n>`, you can see that the
 initial chunk (beginning `>hCoV-19/Australia/N`) does not start with the
