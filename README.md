@@ -40,7 +40,7 @@ is about 0.5TB (511,448,191,537 bytes).
 
 ## Basic usage
 
-### You provide a desired number of chunks
+### Either: You provide a desired number of chunks
 
 The simplest usage is to just print details of the file chunks. You give a
 pattern to split the file on and the number of chunks you want and get
@@ -67,7 +67,7 @@ better line things up.
 You can pipe that outut into `awk '{sum += $2} END {print sum}'` if you want
 to quickly confirm that the sum of all the chunk lengths is 511,448,191,537.
 
-### You provide a desired chunk size
+### Or: You provide a desired chunk size
 
 Instead of giving a number of chunks, you can give a chunk size:
 
@@ -146,7 +146,8 @@ You can also split on a byte pattern using Python's convention of putting a
 `b` before your string pattern:
 
 ```sh
-$ vsplit --prefix 20 --pattern 'b"\n>"' --eval-pattern --chunk-size 50000000000 sequences.fasta
+$ vsplit --prefix 20 --pattern 'b"\n>"' --eval-pattern \
+         --chunk-size 50000000000 sequences.fasta
 # Output is identical to the command above.
 ```
 
@@ -161,7 +162,8 @@ first instance of the pattern is located). If you don't want this initial
 chunk to be returned, you can use `--skip-zero-chunk`:
 
 ```sh
-$ vsplit --skip-zero-chunk --prefix 20 --pattern '"\n>"' --eval-pattern --chunk-size 50000000000 sequences.fasta
+$ vsplit --skip-zero-chunk --prefix 20 --pattern '"\n>"' --eval-pattern \
+         --chunk-size 50000000000 sequences.fasta
 100062652412    50094859262 '\n>hCoV-19/Australia/'
 150157511674    50089751550 '\n>hCoV-19/USA/IL-CDC'
 200247263224    50000002084 '\n>hCoV-19/Brazil/SP-'
@@ -182,7 +184,8 @@ chunk using `--remove-prefix` to indicate a number of prefix characters to
 drop:
 
 ```sh
-$ vsplit --remove-prefix 1 --prefix 20 --pattern '"\n>"' --eval --chunk-size 50000000000 sequences.fasta
+$ vsplit --remove-prefix 1 --prefix 20 --pattern '"\n>"' --eval \
+         --chunk-size 50000000000 sequences.fasta
 0               50014110718 '>hCoV-19/Australia/N'
 50014110719     50225394686 '>hCoV-19/Chongqing/Y'
 100239505406    50092671998 '>hCoV-19/England/ALD'
@@ -375,11 +378,13 @@ to ask `vsplit` to print an `sbatch` command that will submit a job array to
 launch a task for each chunk:
 
 ```sh
-$ vsplit --sbatch --chunk-offsets-filename chunks.tsv --command process-chunk --pattern \> \
-         --n-chunks 100 sequences.fasta
-env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 VSPLIT_CHUNK_OFFSETS_FILENAME=chunks.tsv \
+$ vsplit --sbatch --chunk-offsets-filename chunks.tsv --command process-chunk \
+         --pattern \> --n-chunks 100 sequences.fasta
+env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
+    VSPLIT_CHUNK_OFFSETS_FILENAME=chunks.tsv \
     sbatch --array=0-99 \
-    --export VSPLIT_INPUT_FILENAME,VSPLIT_N_CHUNKS,VSPLIT_CHUNK_OFFSETS_FILENAME process-chunk
+    --export VSPLIT_INPUT_FILENAME,VSPLIT_N_CHUNKS,VSPLIT_CHUNK_OFFSETS_FILENAME \
+    process-chunk
 ```
 
 As in the previous example, the chunk details will be communicated by
