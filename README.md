@@ -1,7 +1,7 @@
 # vsplit
 
 `vsplit` can be used to "virtually" split a file. This is similar to [the
-UNIX split](https://en.wikipedia.org/wiki/Split_(Unix)) command, but with the
+UNIX split command](https://en.wikipedia.org/wiki/Split_(Unix)), but with the
 key difference being that `vsplit` does not write the chunks of the file to
 disk.  Instead, the offsets and lengths of the file chunks are computed and
 made available for downstream processing.
@@ -224,7 +224,8 @@ offset, and length to your program.
 ### Reading chunks
 
 If you are writing Python, you can use the `FileChunk` class to read your
-data. Given variables `filename`, `offset`, and `length` you can write e.g.,:
+data. Given variables `filename`, `offset`, and `length` you can write, for
+example
 
 ```python
 from vsplit import FileChunk
@@ -323,7 +324,6 @@ from vsplit import chunk_from_env
 with chunk_from_env() as fp:
     for line in fp:
         print(line)
-
 ```
 
 Or if your program needs to read its chunk in binary mode:
@@ -383,18 +383,11 @@ $ vsplit --sbatch --chunk-offsets-filename chunks.tsv --command process-chunk \
 env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
     VSPLIT_CHUNK_OFFSETS_FILENAME=chunks.tsv \
     sbatch --array=0-99 \
-    --export VSPLIT_INPUT_FILENAME,VSPLIT_N_CHUNKS,VSPLIT_CHUNK_OFFSETS_FILENAME \
     process-chunk
 ```
 
 As in the previous example, the chunk details will be communicated by
 environment variables (`--env` is implied if you use `--sbatch`).
-
-If your script is written in Python, you can use the `chunk_from_env`
-function to read its chunk, exactly as above (the chunk index is obtained
-from the SLURM `SLURM_ARRAY_TASK_ID` environment variable for the job array
-and its offset and length are taken from the corresponding line in the chunks
-TSV file (`chunks.tsv` in this example).
 
 When using `--sbatch`, you must explicitly specify (via
 `--chunk-offsets-filename`) the location for `vsplit` to store the chunk
@@ -404,9 +397,41 @@ will not be able to determine its chunk details.
 
 You can specify additional arguments to be given to `sbatch` using the
 `--sbatch-args` option (see `man sbatch` for the many options, including
-specification of output files). Because `vsplit` does not actually run your
-command (it just prints it), you can always insert additional `sbatch`
-arguments manually before running the command.
+e.g., specification of the output file via `--output`). Because `vsplit` does
+not actually run your command (it just prints it), you can always insert
+additional `sbatch` arguments manually before running the command.
+
+Note that your command will be wrapped in a script using the `--wrap` option
+of `sbatch`. That means you can include arguments on the command line.
+
+Here's a silly example (just to prove that this works) that would result in a
+number of nanoseconds (the output from `date +%N`) appearing as a command-line
+argument to `process-chunk` on each invocation.
+
+```sh
+$ vsplit --sbatch --chunk-offsets-filename chunks.tsv \
+         --command 'process-chunk $(date +%N)'\
+         --pattern \> --n-chunks 100 sequences.fasta
+```
+
+#### Reading a file chunk in Python in a SLURM job
+
+If your script is written in Python, it can use the `chunk_from_env` function
+to read its chunk, exactly as above. The chunk index is obtained from the
+SLURM `SLURM_ARRAY_TASK_ID` environment variable for the job array. Based on
+this, the chunk offset and length are then taken from the corresponding line
+in the chunks TSV file (`chunks.tsv` in the above `vsplit` example). As
+above, your code would look something like
+
+```python
+from vsplit import chunk_from_env
+
+with chunk_from_env() as fp:
+    for line in fp:
+        print(line)
+```
+
+Or you could read the chunk in binary via `chunk_from_env(binary=True)`.
 
 ## Additional details
 

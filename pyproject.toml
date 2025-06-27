@@ -1,6 +1,6 @@
 [project]
 name = "vsplit"
-version = "0.1.1"
+version = "0.1.3"
 description = "Virtually split a file based on a pattern."
 authors = [{ name = "Terry Jones", email = "terence.jones@charite.de" }]
 readme = "README.md"
