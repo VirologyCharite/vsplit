@@ -1,6 +1,6 @@
 [project]
 name = "vsplit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Virtually split a file based on a pattern."
 authors = [{ name = "Terry Jones", email = "terence.jones@charite.de" }]
 readme = "README.md"
@@ -21,7 +21,6 @@ classifiers = [
 [project.urls]
 Homepage = "https://virologyCharite.github.io/vsplit/"
 Repository = "https://github.com/virologyCharite/vsplit"
-Documentation = "https://virologyCharite.github.io/vsplit/"
 
 [dependency-groups]
 dev = [
@@ -98,10 +97,6 @@ ignore = [
        "TRY003",
        "SIM115",
        "S101",
-       # LineTooLong
-       # "E501",
-       # DoNotAssignLambda
-       # "E731",
 ]
 
 [tool.ruff.lint.per-file-ignores]
