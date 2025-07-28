@@ -240,7 +240,7 @@ with FileChunk(filename, offset, length) as fp:
     print(fp.read(100))
 ```
 
-Here `fp` is a file-like object that will return just the data from the chunk
+Here, `fp` is a file-like object that will return just the data from the chunk
 of the original (virtually split) file. If you use it via [the with
 statement](https://docs.python.org/3/reference/compound_stmts.html#with) in a
 context manager (as in the above two examples), the file will be opened and
@@ -251,7 +251,7 @@ file-object methods on the `FileChunk` instance (e.g., `open`, `close`,
 ### Passing chunk information to your script
 
 To help with the issue of getting chunk information to your program, `vsplit`
-gives you three options.  In all cases, `vsplit` simply print commands for
+gives you three options.  In all cases, `vsplit` simply prints commands for
 you. You can store the commands in a file and run them as a shell script, or
 pipe them into a shell process or into [GNU
 parallel](https://www.gnu.org/software/parallel/) to run the commands
@@ -271,9 +271,9 @@ process-chunk --filename sequences.fasta --chunk-offset 170570581519 --chunk-len
 process-chunk --filename sequences.fasta --chunk-offset 341204093982 --chunk-length 170244097555
 ```
 
-In the above, you use `[...]` markers on your command line as placeholders
-for things that should be replaced with per-chunk information.  The full set
-of indicators is
+In the above, you use markers in the format `[x]` (for some `x`, see below)
+as placeholders for things that should be replaced with per-chunk
+information.  The full set of indicators is
 
     [C]: The (shell-quoted) name of the file containing the TAB-separated chunk offset/lengths.
     [F]: The (shell-quoted) input filename (i.e., of the file that was virtually split).
@@ -283,11 +283,12 @@ of indicators is
     [N]: The overall number of chunks found.
     [O]: The chunk offset.
 
-These are all always provided but for any particular program only some subset will
-be used. Note that there is no reliance on Python here, your program could be
-written in any language and then just open the file and read its data however
-it likes.  But if you are in Python you can use the `FileChunk` class
-described above.
+These values are all always provided, but for any particular program only
+some subset will be useful. Note that there is no need for the
+`process-chunk` program in the above to be written in Python.  Your program
+can be written in any language and can open the file and read its data
+however it likes. But if you are writing in Python, you can use the
+`FileChunk` class described above.
 
 The usefulness of the `[0I]` indicator becomes apparent when more than nine
 chunks are found. In the below, the output files have leading zeroes in their
@@ -333,12 +334,14 @@ env VSPLIT_INPUT_FILENAME=sequences.fasta VSPLIT_N_CHUNKS=3 \
     VSPLIT_CHUNK_INDEX=2 VSPLIT_LENGTH=170244097555 VSPLIT_OFFSET=341204093982 process-chunk
 ```
 
-Note that the chunk offsets filename refers to a `chunks.tsv` file in a
-temporary directory. You can pass an explicit filename via
-`--chunk-offsets-filename`, if you prefer. This file will eventually be
-removed by your operating system. `vsplit` cannot remove it because you might
-be needing it in your script (if you are relying on the chunk index variable
-as opposed to the offset and length variables).
+Note that the chunk offsets filename (`VSPLIT_CHUNK_OFFSETS_FILENAME`) refers
+to a file named `chunks.tsv` in a temporary directory. This file will
+eventually be removed by your operating system. `vsplit` cannot remove it
+because you might be needing it in your script (if you are relying on the
+chunk index variable as opposed to the offset and length variables). You can
+pass an explicit filename via `--chunk-offsets-filename`, if you want
+`vsplit` to write the chunks file to a non-temporary location of your
+choosing.
 
 If your script is in Python, there is a convenience function for reading the
 environment variables and getting you a `FileChunk` instance. E.g.:
@@ -390,7 +393,8 @@ And here's a version that saves the output from each invocation of the
 program into a separate file:
 
 ```sh
-$ vsplit --env --command 'print-ids.py > OUT-[0I].txt' --pattern \> --n-chunks 20 sequences.fasta | parallel
+$ vsplit --env --command 'print-ids.py > OUT-[0I].txt' --pattern \> \
+         --n-chunks 20 sequences.fasta | parallel
 ```
 
 This creates 20 output files, named `OUT-00.txt` through `OUT-19.txt`, each
@@ -421,17 +425,24 @@ be accessible to your SLURM jobs once they are started, otherwise your script
 will not be able to determine its chunk details.
 
 You can specify additional arguments to be given to `sbatch` using the
-`--sbatch-args` option (see `man sbatch` for the many options, including
-e.g., specification of the output file via `--output`). Because `vsplit` does
-not actually run your command (it just prints it), you can always insert
-additional `sbatch` arguments manually before running the command.
+`--sbatch-args` option (see `man sbatch` for the many options). Here's how
+you could tell `sbatch` you want nodes to be allocated for 45 minutes and
+where you want the standard output and error of your script to go (into files
+with the job index as a zero-padded three-digit number):
+
+```
+--sbatch-args '--output %03a.stdout --error OUT/%03a.stderr --time 45:00'
+```
+
+Because `vsplit` does not actually run your command (it just prints it), you
+can always insert additional `sbatch` arguments manually before running the
+command.
 
 Note that your command will be wrapped in a script using the `--wrap` option
 of `sbatch`. That means you can include arguments on the command line.
-
 Here's a silly example (just to prove that this works) that would result in a
-number of nanoseconds (the output from `date +%N`) appearing as a command-line
-argument to `process-chunk` on each invocation.
+number of nanoseconds (the output from `date +%N`) appearing as a
+command-line argument to `process-chunk` on each invocation.
 
 ```sh
 $ vsplit --sbatch --chunk-offsets-filename chunks.tsv \
