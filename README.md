@@ -1,4 +1,4 @@
-# vsplit
+# vsplit - virtually split files
 
 `vsplit` can be used to "virtually" split a file. This is similar to [the
 UNIX split command](https://en.wikipedia.org/wiki/Split_(Unix)), but with the
