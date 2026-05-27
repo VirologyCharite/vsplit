@@ -17,6 +17,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+dependencies = [
+    "mfusepy>=3.0.0",
+]
 
 [project.urls]
 Homepage = "https://virologyCharite.github.io/vsplit/"
@@ -114,3 +117,4 @@ source = ["src"]
 
 [project.scripts]
 vsplit = "vsplit.cli:main"
+vsplit-fuse = "vsplit.fuse:main"

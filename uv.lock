@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.9, <4.0"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -487,6 +487,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f2/97/ebf4da567aa6827c909642694d71c9fcf53e5b504f2d96afea02718862f3/iniconfig-2.1.0.tar.gz", hash = "sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7", size = 4793, upload-time = "2025-03-19T20:09:59.721Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/e1/e6716421ea10d38022b952c159d5161ca1193197fb744506875fbb87ea7b/iniconfig-2.1.0-py3-none-any.whl", hash = "sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760", size = 6050, upload-time = "2025-03-19T20:10:01.071Z" },
+]
+
+[[package]]
+name = "mfusepy"
+version = "3.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1c/94/c9d5dcba4a6a2b32ba23e22fd13ca08e6f5408420b2dfe42984af22277b6/mfusepy-3.0.0.tar.gz", hash = "sha256:eddade33e427bac9c455464cd0a7d12d63c033255ec6b1e0d6ada143a945c6f2", size = 26823, upload-time = "2025-08-01T14:04:30.115Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/a7/42c1e998ae2b505fa89f2e92683ac136b21186bf47ef8dea06ab3d646c8b/mfusepy-3.0.0-py3-none-any.whl", hash = "sha256:1f8d487ac2c1138b1642955ef92e253685943c97e6f3f5b0e910ab8e04c6312d", size = 24710, upload-time = "2025-08-01T14:04:28.872Z" },
 ]
 
 [[package]]
@@ -1235,8 +1244,11 @@ wheels = [
 
 [[package]]
 name = "vsplit"
-version = "0.1.4"
+version = "0.1.5"
 source = { editable = "." }
+dependencies = [
+    { name = "mfusepy" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -1253,6 +1265,7 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "mfusepy", specifier = ">=3.0.0" }]
 
 [package.metadata.requires-dev]
 dev = [
